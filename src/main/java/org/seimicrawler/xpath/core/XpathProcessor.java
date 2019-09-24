@@ -100,16 +100,39 @@ public class XpathProcessor extends XpathBaseVisitor<XValue> {
             if (filterByAttr){
                 Elements context = currentScope().context();
                 String attrName = nodeTest.asString();
-                if (context.size() == 1){
-                    Element el = currentScope().singleEl();
-                    return XValue.create(el.attr(attrName));
-                }else {
-                    List<String> attrs = new LinkedList<>();
-                    for (Element el:context){
-                        attrs.add(el.attr(attrName));
+                if (currentScope().isRecursion()){
+                    if (context.size() == 1){
+                        Element el = currentScope().singleEl();
+                        Elements findRes = el.select("["+attrName+"]");
+                        List<String> attrs = new LinkedList<>();
+                        for (Element e:findRes){
+                            attrs.add(e.attr(attrName));
+                        }
+                        return XValue.create(attrs);
+                    }else {
+                        Elements findRes = new Elements();
+                        for (Element el:context){
+                            findRes.addAll(el.select("["+attrName+"]"));
+                        }
+                        List<String> attrs = new LinkedList<>();
+                        for (Element e:findRes){
+                            attrs.add(e.attr(attrName));
+                        }
+                        return XValue.create(attrs);
                     }
-                    return XValue.create(attrs);
+                }else {
+                    if (context.size() == 1){
+                        Element el = currentScope().singleEl();
+                        return XValue.create(el.attr(attrName));
+                    }else {
+                        List<String> attrs = new LinkedList<>();
+                        for (Element el:context){
+                            attrs.add(el.attr(attrName));
+                        }
+                        return XValue.create(attrs);
+                    }
                 }
+
             }else {
                 if (nodeTest.isExprStr()){
                     String tagName = nodeTest.asString();
@@ -319,9 +342,17 @@ public class XpathProcessor extends XpathBaseVisitor<XValue> {
             XValue left = visit(relationalExprContexts.get(0));
             XValue right = visit(relationalExprContexts.get(1));
             if ("=".equals(ctx.op.getText())){
-                return XValue.create(Objects.equals(left ,right));
+                if (left.valType().equals(right.valType())){
+                    return XValue.create(Objects.equals(left ,right));
+                }else {
+                    return XValue.create(Objects.equals(left.asString() ,right.asString()));
+                }
             }else {
-                return XValue.create(!Objects.equals(left,right));
+                if (left.valType().equals(right.valType())){
+                    return XValue.create(!Objects.equals(left ,right));
+                }else {
+                    return XValue.create(!Objects.equals(left.asString() ,right.asString()));
+                }
             }
         }else {
             throw new XpathParserException("error equalityExpr near:"+ctx.getText());

@@ -54,7 +54,12 @@ public class XValue implements Comparable<XValue> {
 
     public boolean isDate(){return value instanceof Date;}
 
-    public Boolean asBoolean() {return (Boolean)value;}
+    public Boolean asBoolean() {
+        if (value instanceof Boolean){
+            return (Boolean)value;
+        }
+        return value != null && !StringUtils.isBlank(asString());
+    }
 
     public Date asDate(){
         if(value instanceof String){
@@ -175,5 +180,12 @@ public class XValue implements Comparable<XValue> {
         }else {
             throw new XpathParserException("Unsupported comparable XValue = "+toString());
         }
+    }
+
+    public Class valType(){
+        if (value == null){
+            return Object.class;
+        }
+        return value.getClass();
     }
 }
